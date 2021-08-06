@@ -58,7 +58,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 struct ApiGatewayV2LambdaProxyIntegrationV2<'a> {
     version: &'a str,
     raw_path: &'a str,
-    raw_query_string: Option<&'a str>,
     headers: std::collections::HashMap<String, String>,
     query_string_parameters: Option<std::collections::HashMap<String, String>>,
     body: Option<String>,
@@ -69,12 +68,14 @@ struct ApiGatewayV2LambdaProxyIntegrationV2<'a> {
 #[serde(rename_all = "camelCase")]
 struct ApiGatewayV2LambdaProxyIntegrationV2RequestContext<'a> {
     http: ApiGatewayV2LambdaProxyIntegrationV2RequestContextHttp<'a>,
+    raw_query_string: Option<&'a str>,
 }
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ApiGatewayV2LambdaProxyIntegrationV2RequestContextHttp<'a> {
     method: String,
     path: &'a str,
+    source_ip: &'a str,
 }
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,7 +115,6 @@ async fn handle(
     let payload = ApiGatewayV2LambdaProxyIntegrationV2 {
         version: "2.0",
         raw_path: uri.path(),
-        raw_query_string: uri.query(),
         headers,
         query_string_parameters,
         body: if body.is_empty() {
@@ -127,7 +127,9 @@ async fn handle(
             http: ApiGatewayV2LambdaProxyIntegrationV2RequestContextHttp {
                 method: format!("{}", method),
                 path: uri.path(),
+                source_ip: "0.0.0.0",
             },
+            raw_query_string: uri.query(),
         },
     };
     log::info!(
